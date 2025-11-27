@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spanish Vocabulary Flashcards</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .level-selector {
+            background: rgba(255,255,255,0.2);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .level-selector h3 {
+            color: white;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .level-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .level-btn {
+            padding: 12px 24px;
+            border: 2px solid rgba(255,255,255,0.5);
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            font-size: 1em;
+        }
+
+        .level-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+
+        .level-btn.active {
+            background: rgba(255,255,255,0.4);
+            border-color: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .loading {
+            text-align: center;
+            color: white;
+            padding: 40px;
+            font-size: 1.2em;
+        }
+
+        .loading-spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .progress {
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 20px;
+            color: white;
+            text-align: center;
+            font-size: 1.1em;
+        }
+
+        .card-container {
+            perspective: 1000px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            width: 100%;
+            height: 400px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+            cursor: pointer;
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .card-front {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .card-back {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            transform: rotateY(180deg);
+        }
+
+        .language-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .word {
+            font-size: 3em;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .part-of-speech {
+            font-size: 1em;
+            opacity: 0.8;
+            font-style: italic;
+        }
+
+        .audio-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.3);
+            border: 2px solid rgba(255,255,255,0.6);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1.5em;
+        }
+
+        .audio-button:hover {
+            background: rgba(255,255,255,0.5);
+            transform: scale(1.1);
+        }
+
+        .audio-button:active {
+            transform: scale(0.95);
+        }
+
+        .audio-button.playing {
+            background: rgba(255,255,255,0.6);
+            animation: pulse 0.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .audio-toggle {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .audio-toggle label {
+            color: white;
+            font-size: 1em;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .audio-toggle input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+        }
+
+        .btn-shuffle {
+            background: #f093fb;
+            color: white;
+        }
+
+        .instructions {
+            text-align: center;
+            color: white;
+            opacity: 0.9;
+            font-size: 0.95em;
+        }
+
+        .error-message {
+            background: rgba(255,100,100,0.3);
+            border: 2px solid rgba(255,100,100,0.6);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: white;
+            text-align: center;
+        }
+
+        .level-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.3);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 600px) {
+            .word {
+                font-size: 2em;
+            }
+            
+            .controls {
+                flex-wrap: wrap;
+            }
+            
+            button {
+                padding: 12px 20px;
+                font-size: 1em;
+            }
+
+            .level-buttons {
+                flex-direction: column;
+            }
+
+            .level-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Fallback vocabulary data (used if API fails)
+        const fallbackVocabulary = {
+            beginner: [
+                { spanish: "hola", english: "hello", pos: "interjection", level: "A1" },
+                { spanish: "adiós", english: "goodbye", pos: "interjection", level: "A1" },
+                { spanish: "por favor", english: "please", pos: "phrase", level: "A1" },
+                { spanish: "gracias", english: "thank you", pos: "noun", level: "A1" },
+                { spanish: "sí", english: "yes", pos: "adverb", level: "A1" },
+                { spanish: "no", english: "no", pos: "adverb", level: "A1" },
+                { spanish: "agua", english: "water", pos: "noun", level: "A1" },
+                { spanish: "casa", english: "house", pos: "noun", level: "A1" },
+                { spanish: "familia", english: "family", pos: "noun", level: "A1" },
+                { spanish: "amigo", english: "friend", pos: "noun", level: "A1" },
+                { spanish: "libro", english: "book", pos: "noun", level: "A1" },
+                { spanish: "día", english: "day", pos: "noun", level: "A1" },
+                { spanish: "noche", english: "night", pos: "noun", level: "A1" },
+                { spanish: "grande", english: "big", pos: "adjective", level: "A1" },
+                { spanish: "pequeño", english: "small", pos: "adjective", level: "A1" },
+                { spanish: "bueno", english: "good", pos: "adjective", level: "A1" },
+                { spanish: "malo", english: "bad", pos: "adjective", level: "A1" },
+                { spanish: "nuevo", english: "new", pos: "adjective", level: "A1" },
+                { spanish: "viejo", english: "old", pos: "adjective", level: "A1" },
+                { spanish: "comer", english: "to eat", pos: "verb", level: "A1" }
+            ],
+            intermediate: [
+                { spanish: "desarrollar", english: "to develop", pos: "verb", level: "B1" },
+                { spanish: "conseguir", english: "to obtain/achieve", pos: "verb", level: "B1" },
+                { spanish: "mejorar", english: "to improve", pos: "verb", level: "B1" },
+                { spanish: "compromiso", english: "commitment", pos: "noun", level: "B1" },
+                { spanish: "desafío", english: "challenge", pos: "noun", level: "B1" },
+                { spanish: "ambiente", english: "environment", pos: "noun", level: "B1" },
+                { spanish: "investigación", english: "research", pos: "noun", level: "B1" },
+                { spanish: "recursos", english: "resources", pos: "noun", level: "B1" },
+                { spanish: "actual", english: "current", pos: "adjective", level: "B1" },
+                { spanish: "disponible", english: "available", pos: "adjective", level: "B1" },
+                { spanish: "frecuente", english: "frequent", pos: "adjective", level: "B1" },
+                { spanish: "además", english: "furthermore", pos: "adverb", level: "B1" },
+                { spanish: "sin embargo", english: "however", pos: "phrase", level: "B1" },
+                { spanish: "por lo tanto", english: "therefore", pos: "phrase", level: "B1" },
+                { spanish: "a través de", english: "through", pos: "phrase", level: "B1" }
+            ],
+            advanced: [
+                { spanish: "amenazar", english: "to threaten", pos: "verb", level: "C1" },
+                { spanish: "aprovechar", english: "to take advantage of", pos: "verb", level: "C1" },
+                { spanish: "pertenecer", english: "to belong", pos: "verb", level: "C1" },
+                { spanish: "emprender", english: "to undertake", pos: "verb", level: "C1" },
+                { spanish: "índole", english: "nature/kind", pos: "noun", level: "C1" },
+                { spanish: "envergadura", english: "scope/magnitude", pos: "noun", level: "C1" },
+                { spanish: "controversia", english: "controversy", pos: "noun", level: "C1" },
+                { spanish: "discrepancia", english: "discrepancy", pos: "noun", level: "C1" },
+                { spanish: "imprescindible", english: "essential", pos: "adjective", level: "C1" },
+                { spanish: "contundente", english: "forceful/overwhelming", pos: "adjective", level: "C1" },
+                { spanish: "en aras de", english: "for the sake of", pos: "phrase", level: "C1" },
+                { spanish: "a fin de cuentas", english: "after all/in the end", pos: "phrase", level: "C1" },
+                { spanish: "desde luego", english: "of course", pos: "phrase", level: "C1" }
+            ]
+        };
+
+        // API endpoints for vocabulary sources
+        const VOCABULARY_SOURCES = {
+            // This is a sample structure - you would replace with actual API endpoints
+            beginner: 'https://raw.githubusercontent.com/karthiknayak02/spanish-vocabulary-lists/main/beginner.json',
+            intermediate: 'https://raw.githubusercontent.com/karthiknayak02/spanish-vocabulary-lists/main/intermediate.json',
+            advanced: 'https://raw.githubusercontent.com/karthiknayak02/spanish-vocabulary-lists/main/advanced.json'
+        };
+
+        function FlashcardApp() {
+            const [level, setLevel] = useState('beginner');
+            const [cards, setCards] = useState([]);
+            const [currentIndex, setCurrentIndex] = useState(0);
+            const [isFlipped, setIsFlipped] = useState(false);
+            const [studiedCards, setStudiedCards] = useState(new Set());
+            const [voices, setVoices] = useState([]);
+            const [isPlaying, setIsPlaying] = useState(false);
+            const [autoPlay, setAutoPlay] = useState(true);
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState(null);
+
+            const currentCard = cards[currentIndex];
+
+            // Load available voices for speech
+            useEffect(() => {
+                const loadVoices = () => {
+                    const availableVoices = window.speechSynthesis.getVoices();
+                    setVoices(availableVoices);
+                };
+
+                loadVoices();
+                window.speechSynthesis.onvoiceschanged = loadVoices;
+            }, []);
+
+            // Fetch vocabulary from internet source
+            const fetchVocabulary = async (selectedLevel) => {
+                setLoading(true);
+                setError(null);
+
+                try {
+                    // Try to fetch from online source
+                    const response = await fetch(VOCABULARY_SOURCES[selectedLevel]);
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to load vocabulary from source');
+                    }
+
+                    const data = await response.json();
+                    
+                    // Validate data structure
+                    if (Array.isArray(data) && data.length > 0) {
+                        setCards(data);
+                    } else {
+                        throw new Error('Invalid data format');
+                    }
+                } catch (err) {
+                    console.log('Using fallback vocabulary:', err.message);
+                    // Use fallback data if fetch fails
+                    setCards(fallbackVocabulary[selectedLevel]);
+                    setError('Using built-in vocabulary (online source unavailable)');
+                }
+
+                setLoading(false);
+                setCurrentIndex(0);
+                setIsFlipped(false);
+                setStudiedCards(new Set());
+            };
+
+            // Load vocabulary when level changes
+            useEffect(() => {
+                fetchVocabulary(level);
+            }, [level]);
+
+            // Function to speak Spanish text
+            const speakSpanish = (text) => {
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    
+                    const spanishVoice = voices.find(voice => 
+                        voice.lang.startsWith('es-') || voice.lang === 'es'
+                    );
+                    
+                    if (spanishVoice) {
+                        utterance.voice = spanishVoice;
+                    }
+                    
+                    utterance.lang = 'es-ES';
+                    utterance.rate = 0.9;
+                    utterance.pitch = 1;
+
+                    utterance.onstart = () => setIsPlaying(true);
+                    utterance.onend = () => setIsPlaying(false);
+                    utterance.onerror = () => setIsPlaying(false);
+
+                    window.speechSynthesis.speak(utterance);
+                }
+            };
+
+            const handleFlip = () => {
+                setIsFlipped(!isFlipped);
+                setStudiedCards(prev => new Set([...prev, currentIndex]));
+                
+                if (isFlipped && autoPlay && currentCard) {
+                    setTimeout(() => speakSpanish(currentCard.spanish), 300);
+                }
+            };
+
+            const handleNext = () => {
+                if (currentIndex < cards.length - 1) {
+                    setCurrentIndex(currentIndex + 1);
+                    setIsFlipped(false);
+                    if (autoPlay) {
+                        setTimeout(() => speakSpanish(cards[currentIndex + 1].spanish), 300);
+                    }
+                }
+            };
+
+            const handlePrevious = () => {
+                if (currentIndex > 0) {
+                    setCurrentIndex(currentIndex - 1);
+                    setIsFlipped(false);
+                    if (autoPlay) {
+                        setTimeout(() => speakSpanish(cards[currentIndex - 1].spanish), 300);
+                    }
+                }
+            };
+
+            const handleShuffle = () => {
+                const shuffled = [...cards].sort(() => Math.random() - 0.5);
+                setCards(shuffled);
+                setCurrentIndex(0);
+                setIsFlipped(false);
+                setStudiedCards(new Set());
+            };
+
+            const handleLevelChange = (newLevel) => {
+                setLevel(newLevel);
+            };
+
+            // Keyboard shortcuts
+            useEffect(() => {
+                const handleKeyPress = (e) => {
+                    if (loading || cards.length === 0) return;
+
+                    if (e.key === 'ArrowRight' || e.key === ' ') {
+                        e.preventDefault();
+                        if (isFlipped) {
+                            handleNext();
+                        } else {
+                            handleFlip();
+                        }
+                    } else if (e.key === 'ArrowLeft') {
+                        e.preventDefault();
+                        handlePrevious();
+                    } else if (e.key === 'f' || e.key === 'F') {
+                        e.preventDefault();
+                        handleFlip();
+                    }
+                };
+
+                window.addEventListener('keydown', handleKeyPress);
+                return () => window.removeEventListener('keydown', handleKeyPress);
+            }, [currentIndex, isFlipped, loading, cards.length]);
+
+            if (loading) {
+                return (
+                    <div className="container">
+                        <div className="header">
+                            <h1>🇪🇸 Spanish Flashcards 🇬🇧</h1>
+                        </div>
+                        <div className="loading">
+                            <div className="loading-spinner"></div>
+                            <p>Loading vocabulary...</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (!currentCard) {
+                return (
+                    <div className="container">
+                        <div className="header">
+                            <h1>🇪🇸 Spanish Flashcards 🇬🇧</h1>
+                        </div>
+                        <div className="error-message">
+                            No vocabulary available. Please try selecting a different level.
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="container">
+                    <div className="header">
+                        <h1>🇪🇸 Spanish Flashcards 🇬🇧</h1>
+                    </div>
+
+                    <div className="level-selector">
+                        <h3>Select Your Level</h3>
+                        <div className="level-buttons">
+                            <button 
+                                className={`level-btn ${level === 'beginner' ? 'active' : ''}`}
+                                onClick={() => handleLevelChange('beginner')}
+                            >
+                                🌱 Beginner (A1-A2)
+                            </button>
+                            <button 
+                                className={`level-btn ${level === 'intermediate' ? 'active' : ''}`}
+                                onClick={() => handleLevelChange('intermediate')}
+                            >
+                                📚 Intermediate (B1-B2)
+                            </button>
+                            <button 
+                                className={`level-btn ${level === 'advanced' ? 'active' : ''}`}
+                                onClick={() => handleLevelChange('advanced')}
+                            >
+                                🎓 Advanced (C1-C2)
+                            </button>
+                        </div>
+                    </div>
+
+                    {error && (
+                        <div className="error-message">
+                            ⚠️ {error}
+                        </div>
+                    )}
+
+                    <div className="progress">
+                        <span className="level-badge">{currentCard.level || level.toUpperCase()}</span>
+                        <br />
+                        Card {currentIndex + 1} of {cards.length} | Studied: {studiedCards.size}
+                    </div>
+
+                    <div className="card-container">
+                        <div 
+                            className={`card ${isFlipped ? 'flipped' : ''}`}
+                            onClick={handleFlip}
+                        >
+                            <div className="card-face card-front">
+                                <button 
+                                    className={`audio-button ${isPlaying ? 'playing' : ''}`}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        speakSpanish(currentCard.spanish);
+                                    }}
+                                    title="Listen to pronunciation"
+                                >
+                                    🔊
+                                </button>
+                                <div className="language-label">Español</div>
+                                <div className="word">{currentCard.spanish}</div>
+                                <div className="part-of-speech">({currentCard.pos})</div>
+                            </div>
+                            <div className="card-face card-back">
+                                <div className="language-label">English</div>
+                                <div className="word">{currentCard.english}</div>
+                                <div className="part-of-speech">({currentCard.pos})</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="audio-toggle">
+                        <label>
+                            <input 
+                                type="checkbox"
+                                checked={autoPlay}
+                                onChange={(e) => setAutoPlay(e.target.checked)}
+                            />
+                            Auto-play pronunciation
+                        </label>
+                    </div>
+
+                    <div className="controls">
+                        <button 
+                            className="btn-secondary"
+                            onClick={handlePrevious}
+                            disabled={currentIndex === 0}
+                        >
+                            ← Previous
+                        </button>
+                        <button 
+                            className="btn-primary"
+                            onClick={handleFlip}
+                        >
+                            Flip Card
+                        </button>
+                        <button 
+                            className="btn-secondary"
+                            onClick={handleNext}
+                            disabled={currentIndex === cards.length - 1}
+                        >
+                            Next →
+                        </button>
+                    </div>
+
+                    <div className="controls">
+                        <button 
+                            className="btn-shuffle"
+                            onClick={handleShuffle}
+                        >
+                            🔀 Shuffle Cards
+                        </button>
+                    </div>
+
+                    <div className="instructions">
+                        💡 Click card or press Space/F to flip • Arrow keys to navigate
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<FlashcardApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>
